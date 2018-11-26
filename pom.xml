@@ -38,6 +38,8 @@
             <groupId>com.vertica.jdbc</groupId>
             <artifactId>vertica.jdbc</artifactId>
             <version>9.1.1-0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/resources/vertica-jdbc-9.1.1-0.jar</systemPath>
         </dependency>
     </dependencies>
 
