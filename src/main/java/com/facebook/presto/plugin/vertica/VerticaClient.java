@@ -60,7 +60,7 @@ public class VerticaClient extends BaseJdbcClient {
                 connection.getCatalog(),
                 escapeNamePattern(schemaName, escape),
                 escapeNamePattern(tableName, escape),
-                new String[]{"TABLE"});
+                new String[]{"VIEW", "TABLE", "SYNONYM"});
     }
 
     @Override
