@@ -1,7 +1,7 @@
-package com.facebook.presto.plugin.vertica;
+package io.prestosql.plugin.vertica;
 
-import com.facebook.presto.plugin.jdbc.BaseJdbcConfig;
-import com.facebook.presto.plugin.jdbc.JdbcClient;
+import io.prestosql.plugin.jdbc.BaseJdbcConfig;
+import io.prestosql.plugin.jdbc.JdbcClient;
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
