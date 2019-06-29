@@ -1,8 +1,8 @@
-package com.facebook.presto.plugin.vertica;
+package io.prestosql.plugin.vertica;
 
-import com.facebook.presto.plugin.jdbc.*;
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.SchemaTableName;
+import io.prestosql.plugin.jdbc.*;
+import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.connector.SchemaTableName;
 import com.google.common.collect.ImmutableSet;
 import com.vertica.jdbc.Driver;
 
@@ -11,8 +11,11 @@ import java.sql.*;
 import java.util.Properties;
 import java.util.Set;
 
-import static com.facebook.presto.plugin.jdbc.DriverConnectionFactory.basicConnectionProperties;
-import static com.facebook.presto.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
+import java.util.Optional;
+import java.util.Collection;
+
+import static io.prestosql.plugin.jdbc.DriverConnectionFactory.basicConnectionProperties;
+import static io.prestosql.plugin.jdbc.JdbcErrorCode.JDBC_ERROR;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Locale.ENGLISH;
 
@@ -20,8 +23,8 @@ import static java.util.Locale.ENGLISH;
 public class VerticaClient extends BaseJdbcClient {
 
     @Inject
-    public VerticaClient(JdbcConnectorId connectorId, BaseJdbcConfig config) {
-        super(connectorId, config, "", connectionFactory(config));
+    public VerticaClient(BaseJdbcConfig config) {
+        super(config, "", connectionFactory(config));
     }
 
     private static ConnectionFactory connectionFactory(BaseJdbcConfig config) {
@@ -32,13 +35,12 @@ public class VerticaClient extends BaseJdbcClient {
         connectionProperties.setProperty("user", config.getConnectionUser());
         connectionProperties.setProperty("url", config.getConnectionUrl());
         connectionProperties.setProperty("password", config.getConnectionPassword());
-        return new DriverConnectionFactory(new Driver(), config.getConnectionUrl(), connectionProperties);
+        return new DriverConnectionFactory(new Driver(), config.getConnectionUrl(), Optional.empty(), Optional.empty(), connectionProperties);
     }
 
     @Override
-    public Set<String> getSchemaNames() {
-        try (Connection connection = connectionFactory.openConnection();
-             ResultSet resultSet = connection.getMetaData().getSchemas()) {
+    protected Collection<String> listSchemas(Connection connection) {
+        try (ResultSet resultSet = connection.getMetaData().getSchemas()) {
             ImmutableSet.Builder<String> schemaNames = ImmutableSet.builder();
             while (resultSet.next()) {
                 String schemaName = resultSet.getString("TABLE_SCHEM").toLowerCase(ENGLISH);
@@ -53,13 +55,13 @@ public class VerticaClient extends BaseJdbcClient {
     }
 
     @Override
-    protected ResultSet getTables(Connection connection, String schemaName, String tableName) throws SQLException {
+    protected ResultSet getTables(Connection connection, Optional<String> schemaName, Optional<String> tableName) throws SQLException {
         DatabaseMetaData metadata = connection.getMetaData();
-        String escape = metadata.getSearchStringEscape();
+    	Optional<String> escape = Optional.ofNullable(metadata.getSearchStringEscape());
         return metadata.getTables(
                 connection.getCatalog(),
-                escapeNamePattern(schemaName, escape),
-                escapeNamePattern(tableName, escape),
+                escapeNamePattern(schemaName, escape).orElse(null),
+                escapeNamePattern(tableName, escape).orElse(null),
                 new String[]{"VIEW", "TABLE", "SYNONYM"});
     }
 
@@ -71,10 +73,9 @@ public class VerticaClient extends BaseJdbcClient {
     }
 
     @Override
-    protected SchemaTableName getSchemaTableName(ResultSet resultSet) throws SQLException {
-        return new SchemaTableName(
-                resultSet.getString("TABLE_SCHEM").toLowerCase(ENGLISH),
-                resultSet.getString("TABLE_NAME").toLowerCase(ENGLISH));
-    }
+        protected String getTableSchemaName(ResultSet resultSet) throws SQLException {
+		return resultSet.getString("TABLE_SCHEM").toLowerCase(ENGLISH);
+	}
+
 
 }
